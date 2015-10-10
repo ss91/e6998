@@ -1,0 +1,161 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/bin/node', '/usr/bin/npm', 'install' ]
+2 info using npm@1.4.28
+3 info using node@v0.10.37
+4 verbose node symlink /usr/bin/node
+5 warn package.json test_app@1.0.0 No repository field.
+6 warn package.json test_app@1.0.0 No README data
+7 verbose readDependencies using package.json deps
+8 verbose install where, deps [ '/home/sankalp/Academics/e6998/test_app',
+8 verbose install   [ 'express', 'mongoose', 'body-parser' ] ]
+9 info preinstall test_app@1.0.0
+10 verbose readDependencies using package.json deps
+11 verbose cache add [ 'mongoose@3.16.13', null ]
+12 verbose cache add name=undefined spec="mongoose@3.16.13" args=["mongoose@3.16.13",null]
+13 verbose parsed url { protocol: null,
+13 verbose parsed url   slashes: null,
+13 verbose parsed url   auth: null,
+13 verbose parsed url   host: null,
+13 verbose parsed url   port: null,
+13 verbose parsed url   hostname: null,
+13 verbose parsed url   hash: null,
+13 verbose parsed url   search: null,
+13 verbose parsed url   query: null,
+13 verbose parsed url   pathname: 'mongoose@3.16.13',
+13 verbose parsed url   path: 'mongoose@3.16.13',
+13 verbose parsed url   href: 'mongoose@3.16.13' }
+14 verbose cache add [ 'body-parser@~1.0.1', null ]
+15 verbose cache add name=undefined spec="body-parser@~1.0.1" args=["body-parser@~1.0.1",null]
+16 verbose parsed url { protocol: null,
+16 verbose parsed url   slashes: null,
+16 verbose parsed url   auth: null,
+16 verbose parsed url   host: null,
+16 verbose parsed url   port: null,
+16 verbose parsed url   hostname: null,
+16 verbose parsed url   hash: null,
+16 verbose parsed url   search: null,
+16 verbose parsed url   query: null,
+16 verbose parsed url   pathname: 'body-parser@~1.0.1',
+16 verbose parsed url   path: 'body-parser@~1.0.1',
+16 verbose parsed url   href: 'body-parser@~1.0.1' }
+17 verbose already installed skipping express@^4.13.3 /home/sankalp/Academics/e6998/test_app
+18 verbose cache add name="mongoose" spec="3.16.13" args=["mongoose","3.16.13"]
+19 verbose parsed url { protocol: null,
+19 verbose parsed url   slashes: null,
+19 verbose parsed url   auth: null,
+19 verbose parsed url   host: null,
+19 verbose parsed url   port: null,
+19 verbose parsed url   hostname: null,
+19 verbose parsed url   hash: null,
+19 verbose parsed url   search: null,
+19 verbose parsed url   query: null,
+19 verbose parsed url   pathname: '3.16.13',
+19 verbose parsed url   path: '3.16.13',
+19 verbose parsed url   href: '3.16.13' }
+20 verbose addNamed [ 'mongoose', '3.16.13' ]
+21 verbose addNamed [ '3.16.13', '3.16.13' ]
+22 verbose cache add name="body-parser" spec="~1.0.1" args=["body-parser","~1.0.1"]
+23 verbose parsed url { protocol: null,
+23 verbose parsed url   slashes: null,
+23 verbose parsed url   auth: null,
+23 verbose parsed url   host: null,
+23 verbose parsed url   port: null,
+23 verbose parsed url   hostname: null,
+23 verbose parsed url   hash: null,
+23 verbose parsed url   search: null,
+23 verbose parsed url   query: null,
+23 verbose parsed url   pathname: '~1.0.1',
+23 verbose parsed url   path: '~1.0.1',
+23 verbose parsed url   href: '~1.0.1' }
+24 verbose addNamed [ 'body-parser', '~1.0.1' ]
+25 verbose addNamed [ null, '>=1.0.1-0 <1.1.0-0' ]
+26 silly lockFile 38eb8312-mongoose-3-16-13 mongoose@3.16.13
+27 verbose lock mongoose@3.16.13 /home/sankalp/.npm/38eb8312-mongoose-3-16-13.lock
+28 silly lockFile ed7f1d4f-body-parser-1-0-1 body-parser@~1.0.1
+29 verbose lock body-parser@~1.0.1 /home/sankalp/.npm/ed7f1d4f-body-parser-1-0-1.lock
+30 silly addNameRange { name: 'body-parser',
+30 silly addNameRange   range: '>=1.0.1-0 <1.1.0-0',
+30 silly addNameRange   hasData: false }
+31 verbose registry.get https://registry.npmjs.org/body-parser not expired, no request
+32 silly addNameRange number 2 { name: 'body-parser',
+32 silly addNameRange   range: '>=1.0.1-0 <1.1.0-0',
+32 silly addNameRange   hasData: true }
+33 silly addNameRange versions [ 'body-parser',
+33 silly addNameRange   [ '1.0.0',
+33 silly addNameRange     '1.0.1',
+33 silly addNameRange     '1.0.2',
+33 silly addNameRange     '1.1.0',
+33 silly addNameRange     '1.1.1',
+33 silly addNameRange     '1.1.2',
+33 silly addNameRange     '1.2.0',
+33 silly addNameRange     '1.2.1',
+33 silly addNameRange     '1.2.2',
+33 silly addNameRange     '1.3.0',
+33 silly addNameRange     '1.3.1',
+33 silly addNameRange     '1.4.0',
+33 silly addNameRange     '1.4.1',
+33 silly addNameRange     '1.4.2',
+33 silly addNameRange     '1.4.3',
+33 silly addNameRange     '1.5.0',
+33 silly addNameRange     '1.5.1',
+33 silly addNameRange     '1.5.2',
+33 silly addNameRange     '1.6.0',
+33 silly addNameRange     '1.6.1',
+33 silly addNameRange     '1.6.2',
+33 silly addNameRange     '1.6.3',
+33 silly addNameRange     '1.6.4',
+33 silly addNameRange     '1.6.5',
+33 silly addNameRange     '1.6.6',
+33 silly addNameRange     '1.6.7',
+33 silly addNameRange     '1.7.0',
+33 silly addNameRange     '1.8.0',
+33 silly addNameRange     '1.8.1',
+33 silly addNameRange     '1.8.2',
+33 silly addNameRange     '1.8.3',
+33 silly addNameRange     '1.8.4',
+33 silly addNameRange     '1.9.0',
+33 silly addNameRange     '1.9.1',
+33 silly addNameRange     '1.9.2',
+33 silly addNameRange     '1.9.3',
+33 silly addNameRange     '1.10.0',
+33 silly addNameRange     '1.10.1',
+33 silly addNameRange     '1.10.2',
+33 silly addNameRange     '1.11.0',
+33 silly addNameRange     '1.12.0',
+33 silly addNameRange     '1.12.1',
+33 silly addNameRange     '1.12.2',
+33 silly addNameRange     '1.12.3',
+33 silly addNameRange     '1.12.4',
+33 silly addNameRange     '1.13.0',
+33 silly addNameRange     '1.13.1',
+33 silly addNameRange     '1.13.2',
+33 silly addNameRange     '1.13.3',
+33 silly addNameRange     '1.14.0',
+33 silly addNameRange     '1.14.1' ] ]
+34 verbose addNamed [ 'body-parser', '1.0.2' ]
+35 verbose addNamed [ '1.0.2', '1.0.2' ]
+36 silly lockFile bc6ccf3b-body-parser-1-0-2 body-parser@1.0.2
+37 verbose lock body-parser@1.0.2 /home/sankalp/.npm/bc6ccf3b-body-parser-1-0-2.lock
+38 verbose registry.get https://registry.npmjs.org/mongoose not expired, no request
+39 silly lockFile 38eb8312-mongoose-3-16-13 mongoose@3.16.13
+40 silly lockFile 38eb8312-mongoose-3-16-13 mongoose@3.16.13
+41 silly lockFile bc6ccf3b-body-parser-1-0-2 body-parser@1.0.2
+42 silly lockFile bc6ccf3b-body-parser-1-0-2 body-parser@1.0.2
+43 silly lockFile ed7f1d4f-body-parser-1-0-1 body-parser@~1.0.1
+44 silly lockFile ed7f1d4f-body-parser-1-0-1 body-parser@~1.0.1
+45 error Error: version not found: mongoose@3.16.13
+45 error     at /usr/lib/node_modules/npm/lib/cache/add-named.js:125:12
+45 error     at RegClient.get_ (/usr/lib/node_modules/npm/node_modules/npm-registry-client/lib/get.js:130:14)
+45 error     at RegClient.<anonymous> (/usr/lib/node_modules/npm/node_modules/npm-registry-client/lib/get.js:49:12)
+45 error     at evalmachine.<anonymous>:272:14
+45 error     at /usr/lib/node_modules/npm/node_modules/graceful-fs/graceful-fs.js:102:5
+45 error     at Object.oncomplete (evalmachine.<anonymous>:108:15)
+46 error If you need help, you may report this *entire* log,
+46 error including the npm and node versions, at:
+46 error     <http://github.com/npm/npm/issues>
+47 error System Linux 3.13.0-37-generic
+48 error command "/usr/bin/node" "/usr/bin/npm" "install"
+49 error cwd /home/sankalp/Academics/e6998/test_app
+50 error node -v v0.10.37
+51 error npm -v 1.4.28
+52 verbose exit [ 1, true ]

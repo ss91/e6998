@@ -1,0 +1,16 @@
+{
+  "name": "router_app",
+  "version": "1.0.0",
+  "description": "router server",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.3",
+	"mongoose": "~3.6.13",
+	"body-parser": "~1.0.1"
+  }
+}
