@@ -20,13 +20,15 @@ var port = process.env.PORT || 8080; // set our port
 var mongoose = require('mongoose');
 mongoose.connect('mongodb://127.0.0.1:27017/mydb'); // connect to our database
 
-var Student = require('./app/models/student');
+//var Student = require('./app/models/student');
 var Course = require('./app/models/course');
 
 //For RI
-var ri_port = '8081';
-var ri_ip_addr = '209.2.218.25';
-//var ri_ip_addr = '160.39.145.54';
+var ri_ip_addr = '160.39.134.106'
+var ri_port = '6379'
+
+var redis = require("redis"),
+publisher = redis.createClient(ri_port, ri_ip_addr);
 
 // ROUTES FOR OUR API
 // =============================================================================
@@ -42,7 +44,7 @@ router.use(function(req, res, next) {
 // test route to make sure everything is working (accessed at GET http://localhost:8080/api)
 router.get('/', function(req, res) {
     res.json({
-        message: 'hooray! welcome to our api!'
+        message: 'Course !'
     });
 });
 
@@ -118,52 +120,17 @@ router.route('/courses/:course_id')
                     res.send(err);
 
                 ////////// Iteratively remove course from all students
-                var student_options = {
-
-                    headers: {
-
-                        //'student_id': req.headers.student_id,
-                    }
-                };
+               
                 for (var i = 0; i < student_list.length; i++) {
                     //Forward to RI
                     var student_options = {
-                        host: ri_ip_addr,
-                        port: ri_port,
-                        path: '/api/courses/' + req.params.course_id,
-                        method: 'POST',
-                        headers: {
-                            'type': "remove",
-                            'student_id': student_list[i],
-                        }
+                        course_id: req.params.course_id,
+                        student_id: student_list[i],
+                        type: "remove"
+                        
                     }
 
-                    student_response = function(response) {
-
-                        var str = '';
-                        response.on('data', function(chunk) {
-                            str += chunk;
-                        });
-                        response.on('end', function() {
-                            res.json(JSON.parse(str));
-                        });
-                        response.on('error', function(error) {
-                            res.json({
-                                code: '-1'
-                            });
-                        })
-                    }
-
-                    student_request = http.request(student_options, student_response);
-                    student_request.on('error', function(error) {
-
-                        console.log("Students POST error");
-                        res.json({
-                            message: 'request error'
-                        });
-                    });
-
-                    student_request.end();
+                    publisher.publish("course_channel",JSON.stringify(student_options));
                 }
                 /////////////////////////
                 //send response to router if all successful deletes
@@ -253,45 +220,13 @@ router.route('/courses/:course_id')
                 ///////////
                 //Forward to RI
                 var student_options = {
-                    host: ri_ip_addr,
-                    port: ri_port,
-                    path: '/api/courses/' + req.params.course_id,
-                    method: 'POST',
-                    headers: {
-                        'type': req.headers.type,
-                        'student_id': req.headers.student_id,
-                        //'name': req.headers.name,
-                    }
+                    student_id: req.headers.student_id,
+                    course_id: req.params.course_id,
+                    type: req.headers.type
+
                 };
 
-                //var student_id = req.headers.student_id;
-
-                student_response = function(response) {
-
-                    var str = '';
-                    response.on('data', function(chunk) {
-                        str += chunk;
-                    });
-                    response.on('end', function() {
-                        res.json(JSON.parse(str));
-                    });
-                    response.on('error', function(error) {
-                        res.json({
-                            code: '-1'
-                        });
-                    })
-                }
-
-                student_request = http.request(student_options, student_response);
-                student_request.on('error', function(error) {
-
-                    console.log("Students POST error");
-                    res.json({
-                        message: 'request error'
-                    });
-                });
-
-                student_request.end();
+                publisher.publish("course_channel",JSON.stringify(student_options));
                 /////////////
 
                 courses.save(function(err) {
@@ -341,49 +276,18 @@ router.route('/courses/:course_id')
                     return;
                 }
 
-
                 courses.idLists.splice(indexOfId, 1);
 
                 ///////////
                 //Forward to RI
                 var student_options = {
-                    host: ri_ip_addr,
-                    port: ri_port,
-                    path: '/api/courses/' + req.params.course_id,
-                    method: 'POST',
-                    headers: {
-                        'type': req.headers.type,
-                        'student_id': req.headers.student_id,
-                        //'name': req.headers.name,
-                    }
+                    type: req.headers.type,
+                    student_id: req.headers.student_id,
+                    course_id: req.params.course_id
+                    
                 };
 
-                student_response = function(response) {
-
-                    var str = '';
-                    response.on('data', function(chunk) {
-                        str += chunk;
-                    });
-                    response.on('end', function() {
-                        res.json(JSON.parse(str));
-                    });
-                    response.on('error', function(error) {
-                        res.json({
-                            code: '-1'
-                        });
-                    })
-                }
-
-                student_request = http.request(student_options, student_response);
-                student_request.on('error', function(error) {
-
-                    console.log("Students POST error");
-                    res.json({
-                        message: 'request error'
-                    });
-                });
-
-                student_request.end();
+                publisher.publish("course_channel",JSON.stringify(student_options));
                 /////////////
 
                 courses.save(function(err) {
