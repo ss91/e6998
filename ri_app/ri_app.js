@@ -13,30 +13,97 @@ router.use(function(req, res, next) {
 
 });
 
+var student_channel_dict = []
+
 var student_service_ip_addr = '160.39.144.255';
 var student_service_port = '8081';
 var course_service_ip_addr = '160.39.144.255';
 var course_service_port = '8080';
 
 var redis = require("redis");
-var subscriber = redis.createClient();
 
-var channels = ['student_channel', 'course_channel'];
+var pub_sub = redis.createClient();
+var publisher = redis.createClient();
+var channels = ['ri_channel', 'student_channel', 'course_channel', 'student_channel_1', 'student_channel_2', 'student_channel_3', 'config_channel'];
 
 for (var i = 0; i < channels.length; i++) {
 
     console.log("Subscribing to " + channels[i]);
-    subscriber.subscribe(channels[i]);
+    pub_sub.subscribe(channels[i]);
 
 }
 
-subscriber.on("message", function(channel, message) {
+pub_sub.on("message", function(channel, message) {
 
     console.log("Message '" + message+ "' on channel '" + channel + "' arrived!");
 
     params = JSON.parse(message);
 
-    if (channel === "student_channel") {
+	if (channel === "ri_channel") {
+		
+		source = params.source;
+		if (source === "student") {
+		
+			//publish to course
+
+			var course_options = {
+				
+				'course_id' : params.course_id,
+				'type' : params.type,
+				'student_id': params.student_id,
+			};
+		
+		
+			publisher.publish("course_channel", JSON.stringify(course_options));
+			console.log("Publish to course completed");
+		} 	
+
+		if (source === "course") {
+
+			var student_name = params.student_name;
+
+			var student_options = {
+	
+				'course_id' : params.course_id,
+				'type' : params.type,
+				'student_id' : params.student_id,
+
+			};
+
+
+			
+			if (!student_name) {
+				
+				for (var key in student_channel_dict) {
+					channel_name = student_channel_dict[key];
+					publisher.publish(channel_name, JSON.stringify(student_options));
+					console.log("published when null");
+				}
+
+			}
+
+			else {
+			student_name_first_letter = student_name.charAt(0);	
+
+			for (var key in student_channel_dict) {
+				if (student_name_first_letter >= key.charAt(0) && student_name_first_letter <= key.charAt(1)) {
+						channel_name = student_channel_dict[key];
+				}
+			}
+
+			publisher.publish(channel_name, JSON.stringify(student_options));
+			console.log("Publish to student completed");
+		
+		}
+
+		}
+		
+
+	}	
+
+
+    /*
+	if (channel === "student_channel") {
 
       student_id = message.student_id;
       var course_options = {
@@ -50,36 +117,10 @@ subscriber.on("message", function(channel, message) {
                     'student_id' : params.student_id,
                  }  
     };
-
-    console.log(course_options);
-
-    course_response = function(response) {
-
-
-       var str = '';
-        response.on('data', function(chunk){
-        str += chunk;
-        });
-        
-        response.on('end', function(){
-
-        console.log("end");
-        });
-        
-        response.on('error', function(error){
-        console.log("error");
-      });
-     }
-
-     var course_request =  http.request(course_options, course_response);
-     course_request.on('error', function(error){
-
-      console.log("Students get error");
-      
-    });
-
-     course_request.end();
-    }
+    //console.log(course_options);
+	publisher.publish("course_channel", JSON.stringify(course_options));	   
+	console.log("publish completed"); 	
+}
 
     if (channel === "course_channel") {
 
@@ -99,134 +140,32 @@ subscriber.on("message", function(channel, message) {
 
      };
 
-     student_response = function(response) {
+	console.log(student_options);
+	publisher.publish("student_channel", JSON.stringify(student_options));
+	}
 
-        var str = '';
-        response.on('data', function(chunk){
-        str += chunk;
-        });
-        
-        response.on('end', function(){
+*/
+	if (channel == "config_channel") {
 
-        console.log("end");
-        });
-        
-        response.on('error', function(error){
-          console.log("error");
-        //res.json({code: '-1'});
-      });
-     }
+			console.log("Need to update student routing table now");
+			channel_params = JSON.parse(message);
+			student_channel_dict = []
 
-     var student_request =  http.request(student_options, student_response);
-     student_request.on('error', function(error){
+			console.log(channel_params.configuration);
 
-      console.log("Students get error");
-      
-    });
+			for (var val in channel_params.configuration) {
+				//student_channel_dict[val.key] = val.channel_name;	
+				//console.log (val['key'] + ' ' + val['channel_name']);
+				console.log(channel_params.configuration[val]['key']);
 
-     student_request.end();
-   }
+				student_channel_dict[channel_params.configuration[val]['key']] = channel_params.configuration[val]['channel_name'];
+			} 
 
+			console.log(student_channel_dict)
+	}
+	
 
 });
-
-/*router.route('/courses/:course_id')
-  .post(function(req, res){
-
-    course_id = req.params.course_id;
-
-    var student_options = {
-
-      host: student_service_ip_addr,
-      port: student_service_port,
-      method: 'POST',
-      path: '/api/students/' + req.headers.student_id,
-      headers: {
-          subtype: req.headers.type,
-          course_id: req.params.course_id
-      }
-
-     };
-
-     console.log(student_options);
-
-     student_response = function(response) {
-
-        var str = '';
-        response.on('data', function(chunk){
-        str += chunk;
-        });
-        
-        response.on('end', function(){
-
-        res.json(JSON.parse(str));
-        });
-        
-        response.on('error', function(error){
-        res.json({code: '-1'});
-      });
-     }
-
-     var student_request =  http.request(student_options, student_response);
-     student_request.on('error', function(error){
-
-      console.log("Students get error");
-      res.json({message: 'request error'});
-    });
-
-     student_request.end();
-
-    });
-
-
-router.route('/students/:student_id')
-  .post(function(req, res){
-
-    student_id = req.params.student_id;
-
-    var course_options = {
-
-        host: course_service_ip_addr,
-        port: course_service_port,
-        method: 'POST',
-        path: '/api/courses/' + req.headers.course_id,
-        headers: {  'course_id': req.headers.course_id,
-                    'type' : req.headers.type,
-                    'student_id' : req.params.student_id,
-                   }  
-    };
-
-    console.log(course_options);
-
-    course_response = function(response) {
-
-
-       var str = '';
-        response.on('data', function(chunk){
-        str += chunk;
-        });
-        
-        response.on('end', function(){
-
-        res.json(JSON.parse(str));
-        });
-        
-        response.on('error', function(error){
-        res.json({code: '-1'});
-      });
-     }
-
-     var student_request =  http.request(course_options, course_response);
-     student_request.on('error', function(error){
-
-      console.log("Students get error");
-      res.json({message: 'request error'});
-    });
-
-     student_request.end();
-  });  
-
-app.use('/api', router);*/
 
 // START THE SERVER
 // =============================================================================

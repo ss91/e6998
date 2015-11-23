@@ -18,6 +18,7 @@ var mongoose   = require('mongoose');
 
 var routing_table = []
 var routing_table_port = []
+var routing_table_channel = []
 var course_service_ip_addr = ''
 var course_service_port = 0
 
@@ -30,6 +31,12 @@ var Bear = require('./app/models/bear');
 // this will let us get the data from a POST
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
+var redis = require("redis");
+var publisher = redis.createClient();
+
+
+
 
 var port = process.env.PORT || 8080;        // set our port
 
@@ -86,7 +93,22 @@ router.route('/students/:student_name')
 			});
 			response.on('end', function(){
 
-				res.json(JSON.parse(str));
+				console.log("end get request");
+				temp = JSON.parse(str);
+				
+				if (!temp.Student) {
+					res.json({code: '-1', message: 'Student doesn\'t exist'});		
+					return;
+				}
+
+
+				else if (temp.Student.name == student_name) {
+					console.log("details match");	
+					res.json(JSON.parse(str));
+					return;
+				}
+				else
+					res.json({code: '-1', message: 'ID name mismatch'});		
 			});
 			response.on('error', function(error){
 				res.json({code: '-1'});
@@ -482,6 +504,7 @@ router.route('/courses/:course_id')
         			headers: {'cousrse_id': req.params.course_id,
         						'type' : req.headers.type,
         						'student_id' : req.headers.student_id,
+        						'student_name': req.headers.student_name,
         					 }	
 				}
 
@@ -574,12 +597,31 @@ router.route('/config')
 			var end_range = req.body.end_range;
 			var ip_addr = req.body.ip_addr;
 			var end_port = req.body.end_port;
+			var channel_name = req.body.channel_name;
 
 			var key = begin_range+end_range;
 			console.log("updating " + key);
 
 			routing_table[key] = ip_addr;
 			routing_table_port[key] = end_port;	
+			routing_table_channel[key] = channel_name;
+
+			var channel_options = {configuration: []}
+
+			for (var key in routing_table_channel) {
+
+				console.log(key + ' ' + routing_table_channel[key]);
+				channel_options.configuration.push({
+
+					"key" : key,
+					"channel_name": routing_table_channel[key],
+
+				});
+
+			}
+
+			console.log(channel_options);
+			publisher.publish("config_channel", JSON.stringify(channel_options));
 
 			res.json({
 				message: "student service updated",
@@ -629,8 +671,26 @@ router.route('/config')
 			console.log(cur_key + " deleting");
 			delete routing_table[cur_key];
 			delete routing_table_port[cur_key];
+			delete routing_table_channel[cur_key];
 
 		}
+
+		var channel_options = {configuration: []}
+
+			for (var key in routing_table_channel) {
+
+				console.log(key + ' ' + routing_table_channel[key]);
+				channel_options.configuration.push({
+
+					"key" : key,
+					"channel_name": routing_table_channel[key],
+
+				});
+
+			}
+
+			console.log(channel_options);
+			publisher.publish("config_channel", JSON.stringify(channel_options));
 
 		res.json({message: "deleted"});
 
