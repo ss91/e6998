@@ -1,0 +1,21 @@
+{
+  "name": "gateway_service",
+  "version": "1.0.0",
+  "description": "gateway service",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.3",
+	"mongoose": "~3.6.13",
+	"body-parser": "~1.0.1",
+    "util": "^0.10.3",
+    "xml2js": "^0.4.13",
+    "aws-sdk": "^2.2.22",
+    "q":"^1.4.1",
+    "chalk":"^1.1.1"
+  }
+}
