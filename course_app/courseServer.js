@@ -1,5 +1,5 @@
 
-// server1.js
+// course micro service
 // BASE SETUP
 // =============================================================================
 // call the packages we need
@@ -7,28 +7,25 @@ var express = require('express'); // call express
 var app = express(); // define our app using express
 var bodyParser = require('body-parser');
 var http = require('http');
-
 // configure app to use bodyParser()
 // this will let us get the data from a POST
 app.use(bodyParser.urlencoded({
     extended: true
 }));
 app.use(bodyParser.json());
-
 var port = process.env.PORT || 8080; // set our port
-
 var mongoose = require('mongoose');
-mongoose.connect('mongodb://127.0.0.1:27017/mydb'); // connect to our database
-
-//var Student = require('./app/models/student');
+mongoose.connect('mongodb://127.0.0.1:27017/C'); // connect to our database
 var Course = require('./app/models/course');
 
-//For RI
-var ri_ip_addr = '160.39.134.106'
-var ri_port = '6379'
-
+//Connect to Redis
+var redis_ip_addr = '160.39.134.90'
+var redis_port = '6379'
 var redis = require("redis"),
-publisher = redis.createClient(ri_port, ri_ip_addr);
+    subscriber = redis.createClient(redis_port, redis_ip_addr);
+subscriber.subscribe("course_channel");
+
+publisher = redis.createClient(redis_port, redis_ip_addr);
 
 // ROUTES FOR OUR API
 // =============================================================================
@@ -44,9 +41,62 @@ router.use(function(req, res, next) {
 // test route to make sure everything is working (accessed at GET http://localhost:8080/api)
 router.get('/', function(req, res) {
     res.json({
-        message: 'Course !'
+        message: 'Course Service running'
     });
 });
+
+//If message received from RI to add/remove courses from students
+subscriber.on("message", function(channel, msg) {
+    console.log("Received messsage : ", msg);
+    message = JSON.parse(msg);
+    Course.findOne({
+        'course_id': message.course_id
+    }, function(err, courses) {
+        if (err) {
+            console.log("error")
+        }
+
+        //Create Course if it doesn't exist
+        if (!courses) {
+            console.log("Course doesn't exist");
+            return;
+        }
+
+        if (message.type == 'add') {
+            //check if ID already exists Do Nothing
+            if (courses.idLists.indexOf(message.student_id) !== -1) {
+                console.log("Student Exists");
+                return;
+            }
+            //Append the course if it doesnt exist
+            courses.idLists.push(message.student_id);
+            courses.save(function(err) {
+                if (!err) {
+                    console.log("Added student to course " + message.course_id);
+                } else {
+                    console.log("Error");
+                    return;
+                }
+            });
+        } else {
+            //check if ID doesnt exist Do Nothing
+            var indexOfId = courses.idLists.indexOf(message.student_id);
+            if (indexOfId === -1) {
+                console.log("Student Doesnt Exist");
+                return;
+            }
+            courses.idLists.splice(indexOfId, 1);
+            courses.save(function(err) {
+                if (!err) {
+                    console.log("DELETED");
+                } else {
+                    console.log("ERROR");
+                }
+            });
+        }
+    });
+});
+
 
 //WORKING
 //For courses
@@ -120,19 +170,20 @@ router.route('/courses/:course_id')
                     res.send(err);
 
                 ////////// Iteratively remove course from all students
-               
                 for (var i = 0; i < student_list.length; i++) {
                     //Forward to RI
                     var student_options = {
                         course_id: req.params.course_id,
                         student_id: student_list[i],
-                        type: "remove"
-                        
+                        type: "remove",
+                        source: "course",
+
                     }
 
-                    publisher.publish("course_channel",JSON.stringify(student_options));
+                    publisher.publish("ri_channel", JSON.stringify(student_options));
                 }
                 /////////////////////////
+
                 //send response to router if all successful deletes
                 res.json({
                     message: 'Successfully deleted'
@@ -222,11 +273,12 @@ router.route('/courses/:course_id')
                 var student_options = {
                     student_id: req.headers.student_id,
                     course_id: req.params.course_id,
-                    type: req.headers.type
-
+                    type: req.headers.type,
+                    source: "course",
+                    student_name: req.headers.student_name
                 };
 
-                publisher.publish("course_channel",JSON.stringify(student_options));
+                publisher.publish("ri_channel", JSON.stringify(student_options));
                 /////////////
 
                 courses.save(function(err) {
@@ -283,11 +335,12 @@ router.route('/courses/:course_id')
                 var student_options = {
                     type: req.headers.type,
                     student_id: req.headers.student_id,
-                    course_id: req.params.course_id
-                    
+                    course_id: req.params.course_id,
+                    source: "course",
+                    student_name: req.headers.student_name
                 };
 
-                publisher.publish("course_channel",JSON.stringify(student_options));
+                publisher.publish("ri_channel", JSON.stringify(student_options));
                 /////////////
 
                 courses.save(function(err) {
@@ -308,7 +361,6 @@ router.route('/courses/:course_id')
             });
         }
     });
-
 
 // REGISTER OUR ROUTES -------------------------------
 // all of our routes will be prefixed with /api
