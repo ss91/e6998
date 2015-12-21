@@ -40,8 +40,8 @@ var sqs_request = new aws.SQS({
         }
 });
 
-var receiveMessage = Q.nbind(sqs_request.receiveMessage, sqs_request);
-var deleteMessage = Q.nbind(sqs_request.deleteMessage, sqs_request);
+var receiveMessage = Q.nbind(sqs_response.receiveMessage, sqs_response);
+var deleteMessage = Q.nbind(sqs_response.deleteMessage, sqs_response);
 
 (function pollQueueForMessages() {
 
@@ -64,11 +64,9 @@ var deleteMessage = Q.nbind(sqs_request.deleteMessage, sqs_request);
 
                 }
                 
-                console.log(chalk.green("Deleting:", data.Messages[0].MessageId));
-                console.log(data);
-
-                var response = global_submitted_messages[data.Messages[0].MessageId];
-
+                console.log(chalk.green("Deleting:", JSON.parse(data.Messages[0].Body).MessageID));
+                var response = global_submitted_messages[JSON.parse(data.Messages[0].Body).MessageID];
+                
                 if (!response) {
                         deleteMessage( {
                                 ReceiptHandle: data.Messages[0].ReceiptHandle
@@ -80,13 +78,9 @@ var deleteMessage = Q.nbind(sqs_request.deleteMessage, sqs_request);
                                 )
                             );
                 }
-                            
-
-                response.status(200).send("This should work!");
+                response.status(200).send(JSON.parse(data.Messages[0].Body).Code);
                 delete global_submitted_messages[data.Messages[0].MessageId];
-                console.log(global_submitted_messages);
-
-                
+                               
                 return(
                     deleteMessage({
                         ReceiptHandle: data.Messages[0].ReceiptHandle
@@ -119,45 +113,108 @@ var deleteMessage = Q.nbind(sqs_request.deleteMessage, sqs_request);
 })();
 
 function workflowError(type, error) {
-        console.log(error);
-        console.log("workflow error");
-        error.type = type;
-        return(error);
+    console.log(error);
+    console.log("workflow error");
+    error.type = type;
+    return(error);
 }
 
 var make_sqs_request = function(callback, res){
+    
+    callback.then(function(ssn, student_details) {
         
-        callback.then(function(ssn, student_details) {
-                //console.log("request successfullly submitted");
-                //console.log("THIS WORKS!", ssn);//, student_details);
-                
-                console.log(ssn.MessageId);
-                global_submitted_messages[ssn.MessageId] = res;
-                
-                //get response from function and send here
-                //res.status(200).send("Create request successfully submitted");
-        });
+        console.log(ssn);
+        if (ssn.ret === 'ERR') {
+
+            res.status(503).send(ssn);
+        }
+        else {
+            
+            global_submitted_messages[ssn.MessageId] = res;
+            
+        }
+        
+    });
 };
 
 var create_student = function(ssn, student_details) {
 
-        return new Promise(function(fulfill, reject) {
-            var sqs_params = {
-                MessageBody: JSON.stringify(student_details)
-                };
-                    
-            sqs_request.sendMessage(sqs_params, function(err, data) {
-                if (err) {
-                        console.log('ERR', err);
-                        fulfill('ERR', err);
-                }
-                //console.log(data);
-                //fulfill('OK', data);
-                fulfill(data);
-            });
-            console.log("sending " + ssn + "to request queue");
+    return new Promise(function(fulfill, reject) {
+        var sqs_params = {
+            MessageBody: JSON.stringify(student_details)
+            //MessageBody: student_details
+            };
+                
+        sqs_request.sendMessage(sqs_params, function(err, data) {
+            if (err) {
+                err.ret = 'ERR';
+                fulfill(err);
+            }
+            data.ret = 'OK';
+            fulfill(data);
+        });
+        console.log("Create request sent " + ssn);
     });
 };
+
+var update_student = function(ssn, student_details) {
+    return new Promise(function(fulfill, reject) {
+        var sqs_params = {
+                MessageBody: JSON.stringify(student_details)
+        };
+
+        sqs_response.sendMessage(sqs_params, function(err, data) {
+            if (err) {
+                err.ret = 'ERR';
+                fulfill(err);
+            }
+            data.ret = 'OK';
+            fulfill(data);
+        });
+
+        console.log("Update request sent " + ssn);
+    });
+};
+
+var get_student = function(ssn, student_details) {
+    return new Promise(function(fulfill, reject) {
+        var sqs_params = {
+                    MessageBody: JSON.stringify(student_details)
+            };
+
+        sqs_request.sendMessage(sqs_params, function(err, data) {
+            if (err) {
+                err.ret = 'ERR';    
+                fulfill(err);
+            }
+            data.ret = 'OK';    
+            fulfill(data);
+        });
+
+        console.log("Get request sent " + ssn);
+    });
+};
+
+var delete_student = function(ssn, student_details) {
+    return new Promise(function(fulfill, reject) {
+        var sqs_params = {
+            MessageBody: JSON.stringify(student_details)
+        };
+
+        sqs_request.sendMessage(sqs_params, function(err, data) {
+               
+            if (err) {
+                err.ret = 'ERR';
+                fulfill(err);
+            }
+            data.ret = 'OK';
+            fulfill(data);
+        });
+
+        console.log("Delete request sent " + ssn);
+    });
+};
+                         
 
 router.get('/', function(req, res) {
         res.json({
@@ -166,20 +223,32 @@ router.get('/', function(req, res) {
         
 });
 
+router.get('/students/:ssn', function(req, res) {
+        console.log("Getting student details with ID: " + req.params.ssn);
+        req.body.method = 'GET';
+        req.body.ssn = req.params.ssn;
+        make_sqs_request(get_student(req.params.ssn, req.body), res);
+});
+
 router.put('/students/:ssn', function(req, res) {
         console.log("Updating student with ID: " + req.params.ssn);
+        req.body.method = 'PUT';
+        req.body.ssn = req.params.ssn;
         make_sqs_request(update_student(req.params.ssn, req.body), res);
 });
 
 router.post('/students/:ssn', function(req, res) {
         console.log("Creating a new student with ID: " + req.params.ssn);
-        //console.log(JSON.stringify(req.body));
+        req.body.method = 'POST'; 
+        req.body.ssn = req.params.ssn;
         make_sqs_request(create_student(req.params.ssn, req.body), res);
 });
 
 router.delete('/students/:ssn', function(req, res) {
         console.log("Deleting student with ID: " + req.params.ssn);
-        make_sqs_request(delete_student(req.params.ssn), res);
+        req.body.method = 'DELETE';
+        req.body.ssn = req.params.ssn;
+        make_sqs_request(delete_student(req.params.ssni, req.body), res);
 });
         
 
