@@ -10,10 +10,10 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 
 // Load credentials from local json file
-
-var AWS = require('aws-sdk'),
-    awsCredentialsPath = './aws.credentials.json'
-AWS.config.loadFromPath(awsCredentialsPath);
+var AWS_credentials_path = "./config2.json";
+var config = require( AWS_credentials_path );
+var AWS = require('aws-sdk'), AWS_credentials_path
+AWS.config.loadFromPath(AWS_credentials_path);
 
 var db = new AWS.DynamoDB({
     params: {

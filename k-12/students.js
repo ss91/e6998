@@ -2,18 +2,16 @@
 var express = require('express'); // call express
 var app = express(); // define our app using express
 var bodyParser = require('body-parser');
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 var port = process.env.PORT || 8081; // set our port
 var http = require('http');
 
-// Load credentials from local json file
-var config = require( "./config2.json" );
-var AWS = require('aws-sdk'),
-    awsCredentialsPath = './aws.credentials.json'
-AWS.config.loadFromPath(awsCredentialsPath);
+// Load AWS credentials from local json file
+var AWS_credentials_path = "./config2.json";
+var config = require( AWS_credentials_path );
+var AWS = require('aws-sdk'), AWS_credentials_path
+AWS.config.loadFromPath(AWS_credentials_path);
 
 var db = new AWS.DynamoDB({params: {TableName: 'student'}});
 
@@ -36,74 +34,70 @@ router.get('/', function(req, res) {
     });
 });
 
+//Set parameters for message
+function setParams(req, source, success_callback, failure_callback) {
+    if(source == 'REST')
+    {
+        var message_params = {
+            ssn : req.params.ssn,
+            msg : req,
+            source : source,
+            callback : { success : success_callback,
+                        failure : failure_callback } 
+        }
+    }
+    else
+    {
+        var message_params = {
+            ssn : JSON.parse(req.Body).ssn,
+            msg : req,
+            source : source,
+            callback : { success : success_callback,
+                        failure : failure_callback } 
+        }
+    }
+    return message_params;
+}
 
+//Config REST API
 router.route('/config/')
     .post(function(req, res) {
         dyn.setConfig(Object.keys(req.body));
         res.send("Config updated");
     });
 
+// Students REST API
 router.route('/students/:ssn')
- 	.post(function(req, res) {
-        var message_params = {
-            ssn : req.params.ssn,
-            msg : req,
-            source : 'REST',
-            callback : { success : success_callback_rest,
-                         failure : failure_callback_rest } 
-        };
-
+    .post(function(req, res) {
+        var message_params = setParams(req, 'REST', success_callback_rest, failure_callback_rest);
         dyn.postStudent(message_params, res);
- 	});
+    });
 
 router.route('/students/:ssn')
- 	.get(function(req, res) {
-        var message_params = {
-            ssn : req.params.ssn,
-            msg : req,
-            source : 'REST',
-            callback : { success : success_callback_rest,
-                         failure : failure_callback_rest } 
-        }
+    .get(function(req, res) {
+        var message_params = setParams(req, 'REST', success_callback_rest, failure_callback_rest);
         dyn.getStudent(message_params, res);
- 	});
+    });
 
 router.route('/students/:ssn')
-	.put(function(req,res) {
-        var message_params = {
-            ssn : req.params.ssn,
-            msg : req,
-            source : 'REST',
-            callback : { success : success_callback_rest,
-                         failure : failure_callback_rest } 
-        };
-
+    .put(function(req,res) {
+        var message_params = setParams(req, 'REST', success_callback_rest, failure_callback_rest);
         dyn.putStudent(message_params, res);
-	});
+    });
 
 router.route('/students/:ssn')
-	.delete(function(req,res) {
-        var message_params = {
-            ssn : req.params.ssn,
-            msg : req,
-            source : 'REST',
-            callback : { success : success_callback_rest,
-                         failure : failure_callback_rest } 
-        };
-
+    .delete(function(req,res) {
+        var message_params = setParams(req, 'REST', success_callback_rest, failure_callback_rest);
         dyn.deleteStudent(message_params, res);
-	});
+    });
 
 
 //Queueing API
-
-//var config = require( "./config1.json" );
-
 // Require libraries.
 var Q = require( "q" );
 var chalk = require( "chalk" );
 
-// Create an instance of our SQS Client.
+// Create an instance of our SQS Request Queue
 var sqs_request = new AWS.SQS({
     region: config.aws.requestQueue.region,
     accessKeyId: config.aws.requestQueue.accessID,
@@ -113,6 +107,7 @@ var sqs_request = new AWS.SQS({
     }
 });
 
+// Create an instance of our SQS Response Queue
 var sqs_response = new AWS.SQS({
     region: config.aws.responseQueue.region,
     accessKeyId: config.aws.responseQueue.accessID,
@@ -145,11 +140,9 @@ var deleteMessage = Q.nbind( sqs_request.deleteMessage, sqs_request );
                 );
             }
             console.log( chalk.green( "Deleting:", data.Messages[ 0 ].MessageId ) );
-           // console.log( data );
-
             var result = JSON.parse(data.Messages[0].Body);
 
-            //check queue message for valid params. if not null it out
+            //check queue message for valid ssn.
             if(result.ssn === undefined)
             {
                 console.log("error No SSN");
@@ -162,14 +155,7 @@ var deleteMessage = Q.nbind( sqs_request.deleteMessage, sqs_request );
             var msgId = data.Messages[0].MessageId;
             console.log("message id : " + msgId);
 
-            var message_params = {
-                ssn : ssn,
-                msg : data.Messages[0],
-                source : 'SQS',
-                callback : { success : success_callback_sqs ,
-                             failure : failure_callback_sqs } 
-                };
-
+            var message_params = setParams(data.Messages[0], 'SQS', success_callback_sqs, failure_callback_sqs);
             if(result.method == 'POST')
             {
                 console.log("POST to Dynamo")
