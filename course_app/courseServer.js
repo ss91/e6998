@@ -19,7 +19,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/C'); // connect to our database
 var Course = require('./app/models/course');
 
 //Connect to Redis
-var redis_ip_addr = '160.39.134.90'
+var redis_ip_addr = '209.2.219.239'
 var redis_port = '6379'
 var redis = require("redis"),
     subscriber = redis.createClient(redis_port, redis_ip_addr);
@@ -56,9 +56,14 @@ subscriber.on("message", function(channel, msg) {
             console.log("error")
         }
 
-        //Create Course if it doesn't exist
+        //Check Course if it doesn't exist
         if (!courses) {
             console.log("Course doesn't exist");
+
+            //Remove from course
+            message.type = "remove";
+            message.source = "course";
+            publisher.publish("ri_channel", JSON.stringify(message));
             return;
         }
 
@@ -196,7 +201,7 @@ router.route('/courses/:course_id')
 //Read ids for particular course (accessed at GET http://localhost:8080/api/courses)
 router.route('/courses/:course_id')
     .get(function(req, res) {
-        console.log(req.params.course_id);
+        //console.log(req.params.course_id);
         Course.findOne({
             'course_id': req.params.course_id
         }, function(err, courses) {
@@ -214,7 +219,7 @@ router.route('/courses/:course_id')
                 });
                 return;
             }
-            console.log(courses);
+        //    console.log(courses);
 
             student_list = [];
             var arr1 = courses.idLists;
@@ -266,8 +271,8 @@ router.route('/courses/:course_id')
 
                 //Append the course if it doesnt exist
                 courses.idLists.push(req.headers.student_id);
-                console.log(courses.idLists)
-                console.log(req.headers.type + req.headers.student_id);
+            //    console.log(courses.idLists)
+            //    console.log(req.headers.type + req.headers.student_id);
                 ///////////
                 //Forward to RI
                 var student_options = {

@@ -19,7 +19,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/S3'); // connect to database
 var Student = require('./app/models/student');
 
 //Connect to Redis
-var redis_ip_addr = '160.39.134.90'
+var redis_ip_addr = '209.2.219.239'
 var redis_port = '6379'
 var redis = require("redis"),
 subscriber = redis.createClient(redis_port, redis_ip_addr);
@@ -40,7 +40,7 @@ router.use(function(req, res, next) {
 // test route to make sure everything is working (accessed at GET http://localhost:8080/api)
 router.get('/', function(req, res) {
     res.json({
-        message: 'Student Service 1 running'
+        message: 'Student Service 3 running'
     });
 });
 
@@ -56,9 +56,13 @@ subscriber.on("message", function(channel, msg) {
             console.log("error")
             return;
         }
-        //Check if course exists. If not, Do nothing
+        //Check if course exists. If not, Undo in courses
         if (!students || !message.course_id) {
             console.log("Student Doesnt Exist or New course error");
+            //Remove from course
+        //    message.type = "remove";
+        //    message.source = "student";
+         //   publisher.publish("ri_channel", JSON.stringify(message));
             return;
         }
         //check if ID doesnt exist Do Nothing
@@ -105,7 +109,7 @@ router.route('/students')
 
         var studentId = req.headers.id;
         var studentName = req.headers.studentname;
-        console.log(studentId + studentName);
+    //    console.log(studentId + studentName);
         Student.findOne({
             'id': studentId
         }, function(err, students) {
@@ -150,8 +154,8 @@ router.route('/students/:student_id')
         //check if id exists. If it does, replace
         var studentId = req.params.student_id;
 
-        console.log(req.headers);
-        console.log(studentId);
+     //   console.log(req.headers);
+     //   console.log(studentId);
         Student.findOne({
             'id': studentId
         }, function(err, students) {

@@ -1,6 +1,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
-var config = require('./config.json');
+//var config = require('./config.json');
+var config = require('../../ass2/config2.json');
 var aws = require("aws-sdk");
 var Q = require ("q");
 var router = express.Router();
@@ -163,7 +164,7 @@ var update_student = function(ssn, student_details) {
                 MessageBody: JSON.stringify(student_details)
         };
 
-        sqs_response.sendMessage(sqs_params, function(err, data) {
+        sqs_request.sendMessage(sqs_params, function(err, data) {
             if (err) {
                 err.ret = 'ERR';
                 fulfill(err);
