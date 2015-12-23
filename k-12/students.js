@@ -35,15 +35,14 @@ router.get('/', function(req, res) {
 });
 
 //Set parameters for message
-function setParams(req, source, success_callback, failure_callback) {
+function setParams(req, source, callback) {
     if(source == 'REST')
     {
         var message_params = {
             ssn : req.params.ssn,
             msg : req,
             source : source,
-            callback : { success : success_callback,
-                        failure : failure_callback } 
+            callback : callback
         }
     }
     else
@@ -52,8 +51,7 @@ function setParams(req, source, success_callback, failure_callback) {
             ssn : JSON.parse(req.Body).ssn,
             msg : req,
             source : source,
-            callback : { success : success_callback,
-                        failure : failure_callback } 
+            callback : callback
         }
     }
     return message_params;
@@ -66,28 +64,33 @@ router.route('/config/')
         res.send("Config updated");
     });
 
+router.route('/config')
+    .get(function(req,res) {
+        dyn.getConfig(res);
+    });
+
 // Students REST API
 router.route('/students/:ssn')
     .post(function(req, res) {
-        var message_params = setParams(req, 'REST', success_callback_rest, failure_callback_rest);
+        var message_params = setParams(req, 'REST', callback_rest);
         dyn.postStudent(message_params, res);
     });
 
 router.route('/students/:ssn')
     .get(function(req, res) {
-        var message_params = setParams(req, 'REST', success_callback_rest, failure_callback_rest);
+        var message_params = setParams(req, 'REST', callback_rest);
         dyn.getStudent(message_params, res);
     });
 
 router.route('/students/:ssn')
     .put(function(req,res) {
-        var message_params = setParams(req, 'REST', success_callback_rest, failure_callback_rest);
+        var message_params = setParams(req, 'REST', callback_rest);
         dyn.putStudent(message_params, res);
     });
 
 router.route('/students/:ssn')
     .delete(function(req,res) {
-        var message_params = setParams(req, 'REST', success_callback_rest, failure_callback_rest);
+        var message_params = setParams(req, 'REST', callback_rest);
         dyn.deleteStudent(message_params, res);
     });
 
@@ -155,7 +158,7 @@ var deleteMessage = Q.nbind( sqs_request.deleteMessage, sqs_request );
             var msgId = data.Messages[0].MessageId;
             console.log("message id : " + msgId);
 
-            var message_params = setParams(data.Messages[0], 'SQS', success_callback_sqs, failure_callback_sqs);
+            var message_params = setParams(data.Messages[0], 'SQS', callback_sqs);
             if(result.method == 'POST')
             {
                 console.log("POST to Dynamo")
@@ -213,34 +216,14 @@ function workflowError( type, error ) {
 }
 
 //Callback function for asynchronous success/failure response
-function success_callback_rest(res, msg) {
+function callback_rest(res, msg) {
     res.send(msg.code);
 }
 
-function failure_callback_rest(res, msg) {
-    res.send("Fail : " + msg.code);
-}   
-
-function success_callback_sqs(sqs_response, msg) {                
+function callback_sqs(sqs_response, msg) {                
     var resultMsg = {"Code" : msg.code, "MessageID" : msg.msgId};
     var sqs_params = {
         MessageBody: JSON.stringify(resultMsg)
-    };
-
-    sqs_response.sendMessage(sqs_params, function(err,data) {
-    if(err)
-    {
-        console.log("error" + err);
-    }
-    else
-        console.log("Posted on Queue");
-    });
-}
-
-function failure_callback_sqs(sqs_response, msg) {
-    var resultMsg = {"Code" :"Fail", "MessageID" : msg.msgId};
-    var sqs_params = {
-    MessageBody: JSON.stringify(resultMsg)
     };
 
     sqs_response.sendMessage(sqs_params, function(err,data) {

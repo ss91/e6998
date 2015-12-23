@@ -10,10 +10,10 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 
 // Load credentials from local json file
-var AWS_credentials_path = "./config2.json";
-var config = require( AWS_credentials_path );
-var AWS = require('aws-sdk'), AWS_credentials_path
-AWS.config.loadFromPath(AWS_credentials_path);
+
+var AWS = require('aws-sdk'),
+    awsCredentialsPath = './aws.credentials.json'
+AWS.config.loadFromPath(awsCredentialsPath);
 
 var db = new AWS.DynamoDB({
     params: {
@@ -43,7 +43,6 @@ var postStudent = function(msg_params, res) {
                 var string_vals = {}
                 for (var i = 0; i < config_params.length; i++) {
                     var key = config_params[i];
-                    console.log(key);
                     if (msg_params.source == 'REST') {
                         //console.log(msg_params.msg.body[key]);
                         string_vals[key] = msg_params.msg.body[key];
@@ -63,24 +62,21 @@ var postStudent = function(msg_params, res) {
                     }
                 };
                 var result = db.putItem(itemParams, function(err, data) {
-                    if (!err) {
+                    if (!err) 
                         return_msg['code'] = "Saved to DB";
-                        console.log(return_msg);
-                        msg_params.callback.success(res, return_msg);
-                    } else {
+                    else
                         return_msg['code'] = "Error Saving to DB";
-                        console.log(return_msg);
-                        msg_params.callback.failure(res, return_msg);
-                    }
+                    console.log(return_msg);
+                    msg_params.callback(res, return_msg);
                 });
             } else {
                 return_msg['code'] = "Entry Exists."
                 console.log(return_msg);
-                msg_params.callback.failure(res, return_msg);
+                msg_params.callback(res, return_msg);
             }
         } else {
             return_msg['code'] = "DB Access unavailable";
-            msg_params.callback.failure(res, return_msg);
+            msg_params.callback(res, return_msg);
         }
     });
 }
@@ -100,7 +96,7 @@ var putStudent = function(msg_params, res) {
             if (JSON.stringify(data) === '{}') {
                 console.log("Entry Doesnt exist");
                 return_msg['code'] = "Entry Doesnt exist";
-                msg_params.callback.failure(res, return_msg);
+                msg_params.callback(res, return_msg);
             } else {
                 var existing = {};
                 existing = JSON.parse(data["Item"]["values"].S)
@@ -133,16 +129,14 @@ var putStudent = function(msg_params, res) {
                     }
                 };
                 var result = db.putItem(itemParams, function(err, data) {
-                    if (!err) {
+                    if (!err) 
                         return_msg['code'] = "Saved to DB";
-                        console.log(return_msg);
-                        msg_params.callback.success(res, return_msg);
-                    } else {
+                    else {
                         return_msg['code'] = "Error Saving to DB";
                         return_msg['msgId'] = msg_params.msg.MessageId;
-                        console.log(return_msg);
-                        msg_params.callback.failure(res, return_msg);
                     }
+                    console.log(return_msg);
+                    msg_params.callback(res, return_msg);
                 });
             }
         }
@@ -163,6 +157,12 @@ var getStudent = function(msg_params, res) {
     };
     db.getItem(itemParams, function(err, data) {
         if (!err) {
+            if (JSON.stringify(data) === '{}') {
+                console.log("Entry Doesnt exist");
+                return_msg['code'] = "Entry Doesnt exist";
+                msg_params.callback(res, return_msg);
+                return;
+            } 
             var existing = {};
             existing = JSON.parse(data["Item"]["values"].S);
 
@@ -175,10 +175,10 @@ var getStudent = function(msg_params, res) {
             }
 
             return_msg['code'] = JSON.stringify(string_vals);
-            msg_params.callback.success(res, return_msg);
+            msg_params.callback(res, return_msg);
         } else {
             return_msg['code'] = "Error fetching entry";
-            msg_params.callback.failure(res, return_msg);
+            msg_params.callback(res, return_msg);
         }
     });
 }
@@ -195,17 +195,37 @@ var deleteStudent = function(msg_params, res) {
             }
         }
     };
-    db.deleteItem(itemParams, function(err, data) {
-        if (err) {
+    db.getItem(itemParams, function(err, data) {
+        if (!err) {
+            if (JSON.stringify(data) === '{}') {
+                console.log("Entry Doesnt exist");
+                return_msg['code'] = "Entry Doesnt exist";
+                msg_params.callback(res, return_msg);
+                return;
+            } 
+            else
+            {
+                db.deleteItem(itemParams, function(err, data) {
+                    if (err) {
+                        console.log(err);
+                        return_msg['code'] = "Error deleting " + ssn;
+                    } else {
+
+                        console.log("Successfully deleted :" + ssn);
+                        return_msg['code'] = "Successfully deleted :" + ssn;
+                    }
+                    msg_params.callback(res, return_msg);
+                });
+            }
+        }
+        else
+        {
             console.log(err);
             return_msg['code'] = "Error deleting " + ssn;
-            msg_params.callback.failure(res, return_msg);
-        } else {
-            console.log("Successfully deleted :" + ssn);
-            return_msg['code'] = "Successfully deleted :" + ssn;
-            msg_params.callback.success(res, return_msg);
+            msg_params.callback(res, return_msg);   
         }
     });
+
 }
 
 var setConfig = function(config) {
@@ -214,10 +234,15 @@ var setConfig = function(config) {
     console.log("New config params : " + config_params);
 }
 
+var getConfig = function(res) {
+    res.send(JSON.stringify(config_params));
+}
+
 module.exports = {
     postStudent: postStudent,
     putStudent: putStudent,
     getStudent: getStudent,
     deleteStudent: deleteStudent,
-    setConfig: setConfig
+    setConfig: setConfig,
+    getConfig: getConfig
 }
