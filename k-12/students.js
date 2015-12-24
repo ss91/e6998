@@ -186,6 +186,7 @@ var deleteMessage = Q.nbind( sqs_request.deleteMessage, sqs_request );
                 })
             );
 
+            return;
         }
     )
     .then(

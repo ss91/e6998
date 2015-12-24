@@ -69,6 +69,7 @@ var deleteMessage = Q.nbind(sqs_response.deleteMessage, sqs_response);
                 var response = global_submitted_messages[JSON.parse(data.Messages[0].Body).MessageID];
                 
                 if (!response) {
+                    /*
                         deleteMessage( {
                                 ReceiptHandle: data.Messages[0].ReceiptHandle
                         });
@@ -78,16 +79,17 @@ var deleteMessage = Q.nbind(sqs_response.deleteMessage, sqs_response);
                                 new Error("Message not associated with request")
                                 )
                             );
+*/
                 }
                 response.status(200).send(JSON.parse(data.Messages[0].Body).Code);
                 delete global_submitted_messages[data.Messages[0].MessageId];
-                               
+                       /*        
                 return(
                     deleteMessage({
                         ReceiptHandle: data.Messages[0].ReceiptHandle
                     })
                 );
-                
+                */
 
             }
         )
